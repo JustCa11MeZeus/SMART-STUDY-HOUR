@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Study Hour</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        body {
+            font-family: Arial;
+            background: lightblue;
+            min-height: 100vh;
+            padding: 20px
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: #fff;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, .2);
+            position: relative;
+            border-style: inset;
+            border-width: 10px;
+
+        }
+
+        /* Pomodoro top-left */
+        .pomodoro-box {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: #fff;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, .2);
+            text-align: center;
+        }
+
+        .timer {
+            font-size: 1.5em;
+            margin-bottom: 5px
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            color: #fff;
+            text-align: center;
+            padding: 25px
+        }
+
+        .header h1 {
+            font-size: 2.2em
+        }
+
+        .stats {
+            display: flex;
+            gap: 10px;
+            justify-content: space-around;
+            margin-top: 15px
+        }
+
+        .stat {
+            background: rgba(255, 255, 255, .2);
+            padding: 10px;
+            border-radius: 10px
+        }
+
+        .main {
+            padding: 20px
+        }
+
+        input,
+        select,
+        button,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            margin-top: 8px;
+            border-radius: 8px;
+            border: 1px solid #ccc
+        }
+
+        button {
+            background: #4facfe;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            width: 70px;
+        }
+
+        button:hover {
+            opacity: .9
+        }
+
+        .task {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f1f1f1;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 8px
+        }
+
+        .done {
+            text-decoration: line-through;
+            opacity: .6
+        }
+
+        .section {
+            margin-bottom: 25px
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Pomodoro Timer Top Left -->
+        <div class="pomodoro-box">
+            <div id="timer" class="timer">25:00</div>
+            <button onclick="startTimer()">Start</button>
+            <button onclick="resetTimer()">Reset</button>
+        </div>
+
+    <div class="container">
+
+        
+        <div class="header">
+            <h1>📚 Smart Study Hour</h1>
+            <div class="stats">
+                <div class="stat">Tasks: <span id="total">0</span></div>
+                <div class="stat">Done: <span id="done">0</span></div>
+            </div>
+        </div>
+
+        <div class="main">
+
+            <div class="section">
+                <h3>Add Task</h3>
+                <input id="taskInput" placeholder="Task">
+                <select id="subjectInput">
+                    <option value="">Select Subject</option>
+                    <option value="CPAR">CPAR</option>
+                    <option value="RESEARCH">RESEARCH</option>
+                    <option value="HOPE">HOPE</option>
+                    <option value="HOMEROOM">HOMEROOM</option>
+                    <option value="MATH">MATH</option>
+                </select>
+                <input type="date" id="dateInput">
+                <button onclick="addTask()">Add</button>
+            </div>
+
+            <div class="section">
+                <h3>Things To Do</h3>
+                <div id="list"></div>
+            </div>
+
+          
+
+            <div class="section">
+                <h3>Study Journal</h3>
+                <textarea id="journalInput"></textarea>
+                <button onclick="saveJournal()">Save</button>
+                <div id="journalList"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+        let journals = JSON.parse(localStorage.getItem('journals')) || [];
+
+        function addTask() {
+            let t = document.getElementById('taskInput').value;
+            let s = document.getElementById('subjectInput').value;
+            let d = document.getElementById('dateInput').value;
+            if (!t) return;
+            tasks.push({ t, s, d, done: false });
+            save(); render();
+            document.getElementById('taskInput').value = '';
+            document.getElementById('subjectInput').value = '';
+            document.getElementById('dateInput').value = '';
+        }
+
+        function toggle(i) { tasks[i].done = !tasks[i].done; save(); render(); }
+        function del(i) { tasks.splice(i, 1); save(); render(); }
+
+        function render() {
+            let list = document.getElementById('list');
+            list.innerHTML = '';
+            let doneCount = 0;
+            tasks.forEach((x, i) => {
+                if (x.done) doneCount++;
+                list.innerHTML += `<div class="task ${x.done ? 'done' : ''}">
+<span>${x.t} (${x.s}) - ${x.d || ''}</span>
+<div>
+<button onclick="toggle(${i})">✔</button>
+<button onclick="del(${i})">✖</button>
+</div>
+</div>`;
+            });
+
+            document.getElementById('total').innerText = tasks.length;
+            document.getElementById('done').innerText = doneCount;
+        }
+
+        function save() {
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            localStorage.setItem('journals', JSON.stringify(journals));
+        }
+
+        function saveJournal() {
+            let j = document.getElementById('journalInput').value;
+            if (!j) return;
+            journals.push(j);
+            save(); renderJournal();
+            document.getElementById('journalInput').value = '';
+        }
+
+        function renderJournal() {
+            let div = document.getElementById('journalList');
+            div.innerHTML = '';
+            journals.forEach((x, i) => {
+                div.innerHTML += `<div class="task">
+                    <span>${x}</span>
+                    <button onclick="deleteJournal(${i})">🗑️</button>
+                </div>`;
+            });
+        }
+
+        function deleteJournal(i) {
+            if (!confirm('Delete this journal entry?')) return;
+            journals.splice(i, 1);
+            save();
+            renderJournal();
+        };
+
+    
+
+
+        // Pomodoro Timer
+        let time = 1500;
+        let interval;
+
+        function startTimer() {
+            if (interval) return;
+            interval = setInterval(() => {
+                if (time <= 0) { clearInterval(interval); interval = null; alert('Time is up!'); return; }
+                time--;
+                updateTimer();
+            }, 1000);
+        }
+
+        function resetTimer() {
+            clearInterval(interval);
+            interval = null;
+            time = 1500;
+            updateTimer();
+        }
+
+        function updateTimer() {
+            let min = Math.floor(time / 60);
+            let sec = time % 60;
+            document.getElementById('timer').innerText = `${min}:${sec < 10 ? '0' : ''}${sec}`;
+        }
+
+        render();
+        renderJournal();
+        updateTimer();
+    </script>
+</body>
+
+</html>
